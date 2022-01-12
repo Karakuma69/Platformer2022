@@ -94,12 +94,6 @@ namespace GSGD2.Player
 		private float _durationToDisableGroundRaycastWhenJumping = 0.5f;
 
 		[SerializeField]
-		private bool _resetJumpCountWhenFalling = true;
-
-		[SerializeField]
-		private int _allowedJumpCountWhenFalling = 1;
-
-		[SerializeField]
 		private bool _resetJumpCountWhenWallJumping = true;
 
 		[SerializeField]
@@ -117,12 +111,6 @@ namespace GSGD2.Player
 
 		[SerializeField]
 		private float _durationToDisableGroundRaycastWhenDashing = 0.5f;
-
-		[SerializeField]
-		private bool _resetDashCountWhenFalling = true;
-
-		[SerializeField]
-		private int _allowedDashCountWhenFalling = 1;
 
 		[SerializeField]
 		private float _wallRaycastDistanceWhenDashing = 10f;
@@ -203,10 +191,6 @@ namespace GSGD2.Player
 		private float _currentDurationToDisableControlDuringBump = 0;
 		private Vector3 _wallNormalDuringLastWallGrab;
 		private bool _shouldChangeToFallingStateWhenReleasingJump = false;
-		private bool _hasBeganToFallFromGroundedState = false;
-
-		private bool _hasBeganToFallFromGroundedStateAndDidJump = false;
-		private bool _hasBeganToFallFromGroundedStateAndDidDash = false;
 
 		private bool _willPerformJump = false;
 		private bool _willPerformDash = false;
@@ -382,10 +366,7 @@ namespace GSGD2.Player
 		private void OnDestroy()
 		{
 			// TODO AL : lazy, redo this properly
-			if (Gamepad.current != null)
-			{
-				Gamepad.current.SetMotorSpeeds(0f, 0f);
-			}
+			Gamepad.current.SetMotorSpeeds(0f, 0f);
 		}
 
 		#region Inputs binding
@@ -500,10 +481,6 @@ namespace GSGD2.Player
 			_characterCollision.ResetCurrentValues();
 			ResetInputs();
 			_shouldChangeToFallingStateWhenReleasingJump = _changeToFallingStateWhenReleasingJump;
-
-			_hasBeganToFallFromGroundedState = false;
-			_hasBeganToFallFromGroundedStateAndDidJump = false;
-			_hasBeganToFallFromGroundedStateAndDidDash = false;
 		}
 
 		private void ResetInputs()
@@ -546,6 +523,8 @@ namespace GSGD2.Player
 			return true;
 		}
 
+
+
 		public bool ChangeState(State newState, bool force = false)
 		{
 			if (force == false)
@@ -556,17 +535,13 @@ namespace GSGD2.Player
 				}
 			}
 
-			DebugLog($"changin to {newState} from {_currentState}");
+			DebugLog($"changin to {_currentState} from {newState}");
 
 			// State Out transition
 			switch (_currentState)
 			{
 				case State.Grounded:
 				{
-					if (newState == State.Falling)
-					{
-						_hasBeganToFallFromGroundedState = true;
-					}
 				}
 				break;
 				case State.Falling:
@@ -618,7 +593,6 @@ namespace GSGD2.Player
 				break;
 				case State.Falling:
 				{
-
 				}
 				break;
 				case State.Bumping:
@@ -637,8 +611,6 @@ namespace GSGD2.Player
 				break;
 				case State.StartJump:
 				{
-
-
 					if (_previousState == State.WallJump)
 					{
 						_shouldChangeToFallingStateWhenReleasingJump = false;
@@ -679,7 +651,6 @@ namespace GSGD2.Player
 						ResetWallGrabDisableDuration();
 					}
 					_characterCollision.SetMaxDistance(_wallRaycastDistanceWhenDashing);
-
 				}
 				break;
 				case State.DamageTaken:
@@ -697,14 +668,14 @@ namespace GSGD2.Player
 			return true;
 		}
 
-		private void ResetJumpCount(int allowedForceCount)
+		private void ResetJumpCount(int forcesCountToReset = 0)
 		{
-			_jump.ResetCurrentForceCount(_jump.MaximumAllowedForcesWhileInAir - allowedForceCount);
+			_jump.ResetCurrentForceCount(forcesCountToReset);
 		}
 
-		private void ResetDashCount(int allowedForceCount)
+		private void ResetDashCount(int forcesCountToReset = 0)
 		{
-			_dash.ResetCurrentForceCount(_dash.MaximumAllowedForcesWhileInAir - allowedForceCount);
+			_dash.ResetCurrentForceCount(forcesCountToReset);
 		}
 
 		private void ResetWallGrabDisableDuration()
@@ -952,13 +923,6 @@ namespace GSGD2.Player
 				if (IsWallGrabDisabled == false && _willPerformJump == true)
 				{
 					_willPerformJump = false;
-
-					if (_hasBeganToFallFromGroundedState == true && _hasBeganToFallFromGroundedStateAndDidJump == false && _resetJumpCountWhenFalling == true)
-					{
-						ResetJumpCount(_allowedJumpCountWhenFalling);
-						_hasBeganToFallFromGroundedStateAndDidJump = true;
-					}
-
 					bool canJump = _jump.CanApplyForce() && CanChangeState(State.StartJump);
 					if (canJump == true)
 					{
@@ -980,14 +944,6 @@ namespace GSGD2.Player
 					_characterCollision.HandleWallCollisionAndApplyBonusYReplacement(_lastMovementDirection);
 					if (HasAWallInFrontOfCharacter == false)
 					{
-
-						if (_hasBeganToFallFromGroundedState == true && _hasBeganToFallFromGroundedStateAndDidDash == false && _resetJumpCountWhenFalling == true)
-						{
-							ResetDashCount(_allowedDashCountWhenFalling);
-							_hasBeganToFallFromGroundedStateAndDidDash = true;
-						}
-
-
 						result = _dash.CanApplyForce() && CanChangeState(State.Dashing);
 						if (result == true)
 						{

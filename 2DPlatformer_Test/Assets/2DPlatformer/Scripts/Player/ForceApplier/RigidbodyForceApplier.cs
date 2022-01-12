@@ -13,31 +13,43 @@
 		public bool enabled = true;
 
 		[SerializeField]
-		private int _maximumAllowedForces = 1;
+		private int _maximumAllowedForcesWhileInAir = 1;
 
-		protected int currentAllowedForces = 0;
+		[SerializeField]
+		private bool resetVelocityWhenApplyingForceWhileInAir = true;
 
-		public int MaximumAllowedForcesWhileInAir => _maximumAllowedForces;
+		protected int currentAllowedForcesWhileInAir = 0;
+
+		protected int MaximumAllowedForcesWhileInAir => _maximumAllowedForcesWhileInAir;
+		protected bool ResetVelocityWhenApplyingForceWhileInAir => resetVelocityWhenApplyingForceWhileInAir;
 
 		// Editor only
 		public virtual void Validate()
 		{
-			_maximumAllowedForces = Mathf.RoundToInt(Mathf.Clamp(_maximumAllowedForces, 0, float.MaxValue));
+			_maximumAllowedForcesWhileInAir = Mathf.RoundToInt(Mathf.Clamp(_maximumAllowedForcesWhileInAir, 0, float.MaxValue));
 		}
 
 		public void AddMaximumAllowedForcesWhileInAir(int toAdd)
 		{
-			_maximumAllowedForces = Mathf.RoundToInt(Mathf.Clamp(_maximumAllowedForces + toAdd, 0f, float.MaxValue));
+			_maximumAllowedForcesWhileInAir = Mathf.RoundToInt(Mathf.Clamp(_maximumAllowedForcesWhileInAir + toAdd, 0f, float.MaxValue));
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="forcesCountToReset">if 0, reset to the max allowed. otherwise set the number directly (clamped to maximum)</param>
 		public void ResetCurrentForceCount(int forcesCountToReset = 0)
 		{
-			currentAllowedForces = Mathf.RoundToInt(Mathf.Clamp(forcesCountToReset, 0f, _maximumAllowedForces));
+			if (forcesCountToReset < 0)
+			{
+				forcesCountToReset = 0;
+			}
+			currentAllowedForcesWhileInAir =  Mathf.RoundToInt(Mathf.Clamp(forcesCountToReset == 0 ? 0 : _maximumAllowedForcesWhileInAir - forcesCountToReset, 0f, _maximumAllowedForcesWhileInAir));
 		}
 
 		public virtual bool CanApplyForce()
 		{
-			return enabled && currentAllowedForces < _maximumAllowedForces;
+			return enabled && currentAllowedForcesWhileInAir < _maximumAllowedForcesWhileInAir;
 		}
 
 		public virtual bool TryApplyForce(Rigidbody rigidbody)
@@ -45,7 +57,7 @@
 			if (CanApplyForce() == true)
 			{
 				DoApplyForce(rigidbody);
-				currentAllowedForces++;
+				currentAllowedForcesWhileInAir++;
 				return true;
 			}
 			return false;

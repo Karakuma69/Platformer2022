@@ -58,10 +58,7 @@ namespace GSGD2
 			base.OnDestroy();
 
 			// TODO AL : lazy, redo this properly
-			if (Gamepad.current != null)
-			{
-				Gamepad.current.SetMotorSpeeds(0f, 0f);
-			}
+			Gamepad.current.SetMotorSpeeds(0f, 0f);
 		}
 	}
 }
